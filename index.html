@@ -165,7 +165,120 @@
     .fsBtn.primary{background:rgba(125,211,252,.20); border-color:rgba(125,211,252,.40)}
     .fsBtn.warn{background:rgba(251,191,36,.14); border-color:rgba(251,191,36,.45)}
     .fsBtn.bad{background:rgba(251,113,133,.14); border-color:rgba(251,113,133,.45)}
-  </style>
+  
+    /* Practices circles */
+    .circleRow{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      gap:12px;
+      padding:10px 6px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.14);
+      min-height:70px;
+      align-items:center;
+      margin-top:6px;
+    }
+    .circle{
+      width:52px; height:52px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.06);
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+      user-select:none;
+      font-weight:900;
+      color:rgba(234,240,255,.65);
+      position:relative;
+      transition:.12s transform ease, .12s background ease, .12s border-color ease;
+    }
+    .circle:active{transform:scale(.98)}
+    .circle.done{
+      background:rgba(134,239,172,.18);
+      border-color:rgba(134,239,172,.45);
+      color:rgba(134,239,172,.95);
+    }
+    .circle.done::after{
+      content:"★";
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      font-size:34px;
+      color:rgba(252,211,77,.95);
+      text-shadow: 0 6px 16px rgba(0,0,0,.25);
+      pointer-events:none;
+    }
+    .circle.next{
+      outline:4px solid rgba(125,211,252,.16);
+      border-color:rgba(125,211,252,.50);
+      color:rgba(234,240,255,.95);
+    }
+    .circle.locked{opacity:.55; cursor:not-allowed;}
+
+    /* Range slider (iOS-friendly) */
+    input[type="range"]{
+      -webkit-appearance:none;
+      appearance:none;
+      height:10px;
+      border-radius:999px;
+      background:rgba(125,211,252,.14);
+      border:1px solid rgba(255,255,255,.12);
+      outline:none;
+      width:100%;
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      appearance:none;
+      width:26px; height:26px;
+      border-radius:999px;
+      background:rgba(252,211,77,.95);
+      border:2px solid rgba(125,211,252,.28);
+      box-shadow: 0 6px 16px rgba(0,0,0,.18);
+      cursor:pointer;
+    }
+    input[type="range"]::-moz-range-thumb{
+      width:26px; height:26px;
+      border-radius:999px;
+      background:rgba(252,211,77,.95);
+      border:2px solid rgba(125,211,252,.28);
+      box-shadow: 0 6px 16px rgba(0,0,0,.18);
+      cursor:pointer;
+    }
+
+    /* Celebration */
+    .celebrate{
+      position:fixed; inset:0; z-index:1100;
+      display:none;
+      pointer-events:none;
+    }
+    .celebrate .msg{
+      position:absolute; left:50%; top:12%;
+      transform:translateX(-50%);
+      background:rgba(17,27,46,.92);
+      border:1px solid rgba(255,255,255,.14);
+      padding:14px 18px;
+      border-radius:999px;
+      box-shadow:var(--shadow);
+      font-weight:950;
+      color:var(--text);
+      font-size:22px;
+    }
+    .confetti{
+      position:absolute;
+      width:10px; height:16px;
+      border-radius:4px;
+      opacity:.95;
+      animation: fall 1.6s linear forwards;
+    }
+    @keyframes fall{
+      0% { transform: translateY(-40px) rotate(0deg); opacity:1; }
+      100% { transform: translateY(calc(100vh + 60px)) rotate(720deg); opacity:.98; }
+    }
+
+</style>
 </head>
 <body>
   <header>
@@ -206,6 +319,10 @@
           <label>Minutes</label>
           <input id="newMinutes" type="number" min="1" max="90" step="1" placeholder="10">
         </div>
+        <div class="field mins">
+          <label>Practices</label>
+          <input id="newReps" type="number" min="1" max="30" step="1" placeholder="1">
+        </div>
         <button class="btn primary" id="addBtn">Add</button>
       </div>
 
@@ -226,10 +343,24 @@
         <div id="currentName" style="font-weight:900; font-size:16px; margin-top:6px;">(none selected)</div>
         <div class="bigTime" id="timeLeft">00:00</div>
         <div class="progress"><div class="bar" id="bar"></div></div>
+
+        <div class="smallnote" style="margin-top:10px;">Practices</div>
+        <div class="circleRow" id="circleRowSmall"></div>
+
+        <div class="smallnote" style="margin-top:10px;">Metronome</div>
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <div style="flex:1; min-width:220px;">
+            <input id="bpmRange" type="range" min="40" max="200" value="90" step="1" />
+            <div class="smallnote" style="margin-top:6px;">Tempo: <b><span id="bpmVal">90</span> BPM</b></div>
+          </div>
+          <button class="btn mini primary" id="metroToggle">Start</button>
+        </div>
+
         <div class="row" style="justify-content:center; margin-top:10px;">
           <button class="btn good" id="startBtn">Start</button>
           <button class="btn" id="pauseBtn">Pause</button>
           <button class="btn warn" id="nextBtn">Next</button>
+          <button class="btn bad" id="resetItemBtn">Reset This Item</button>
         </div>
       </div>
     </aside>
@@ -249,10 +380,27 @@
         <div class="progress" style="height:18px;"><div class="bar" id="fsBar"></div></div>
       </div>
 
+      
+      <div class="card" style="background:rgba(0,0,0,.14); border:1px solid var(--line); border-radius:18px; padding:12px;">
+        <div class="row" style="justify-content:space-between; align-items:center;">
+          <div style="font-weight:900;">Metronome</div>
+          <button class="btn mini primary" id="fsMetroToggle">Start</button>
+        </div>
+        <input id="fsBpmRange" type="range" min="40" max="200" value="90" step="1" style="width:100%; margin-top:10px;" />
+        <div class="smallnote" style="margin-top:6px; text-align:center;">Tempo: <b><span id="fsBpmVal">90</span> BPM</b></div>
+      </div>
+
+
+      <div>
+        <div class="smallnote" style="text-align:center; font-weight:800;">Tap one circle after each practice</div>
+        <div class="circleRow" id="circleRowBig"></div>
+      </div>
+
       <div class="fsButtons">
         <button class="fsBtn good" id="fsStart">Start</button>
         <button class="fsBtn primary" id="fsPause">Pause</button>
         <button class="fsBtn warn" id="fsNext">Next</button>
+        <button class="fsBtn bad" id="fsReset">Reset This Item</button>
         <button class="fsBtn bad" id="fsTick">Tick Done ✅</button>
       </div>
 
@@ -261,6 +409,8 @@
       </div>
     </div>
   </div>
+
+  <div class="celebrate" id="celebrate"><div class="msg">🎉 Awesome job Lincoln! 🎉</div></div>
 
   <div class="toast" id="toast"></div>
 
@@ -274,10 +424,211 @@ document.addEventListener("DOMContentLoaded", () => {
     items: [],
     doneMinutes: 0,
     lastDate: TODAY_KEY(),
-    timer: { itemId:null, remainingSec:0, totalSec:0, running:false, interval:null }
+    timer: { itemId:null, remainingSec:0, totalSec:0, running:false, interval:null },
+    reps: {}, // itemId -> boolean[]
+    metroBpm: 90
   };
 
   const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+
+
+  // -------- Practices (reps) state helpers --------
+  function ensureRepsState(item){
+    if(!item) return;
+    const n = Math.max(1, Math.min(30, Number(item.reps||1)));
+    const arr = state.reps[item.id];
+    if(!Array.isArray(arr) || arr.length !== n){
+      const nextArr = Array.from({length:n}, (_,i)=> Boolean(arr && arr[i]));
+      state.reps[item.id] = nextArr;
+      save();
+    }
+  }
+  function repsArray(item){
+    if(!item) return [];
+    ensureRepsState(item);
+    return state.reps[item.id] || [];
+  }
+  function repsDoneCount(item){
+    return repsArray(item).filter(Boolean).length;
+  }
+
+  // ---------------- Metronome (iPad-safe) ----------------
+  let metro = {
+    bpm: 90,
+    running: false,
+    nextTime: 0,
+    scheduler: null,
+    ctx: null,
+    clickBuffer: null,
+    volume: 0.9
+  };
+
+  function getAudioCtx(){
+    if(metro.ctx) return metro.ctx;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return null;
+    metro.ctx = new Ctx();
+    return metro.ctx;
+  }
+
+  function buildClickBuffer(){
+    const ctx = getAudioCtx();
+    if(!ctx || metro.clickBuffer) return;
+    const duration = 0.02;
+    const sampleRate = ctx.sampleRate || 44100;
+    const length = Math.floor(sampleRate * duration);
+    const buffer = ctx.createBuffer(1, length, sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<length;i++){
+      const t = i/length;
+      const env = Math.pow(1 - t, 6);
+      data[i] = (Math.random()*2 - 1) * env;
+    }
+    metro.clickBuffer = buffer;
+  }
+
+  function clickSound(time){
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+    buildClickBuffer();
+
+    if(metro.clickBuffer){
+      const src = ctx.createBufferSource();
+      src.buffer = metro.clickBuffer;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(metro.volume, time);
+      src.connect(gain);
+      gain.connect(ctx.destination);
+      try{ src.start(time); }catch(e){}
+      return;
+    }
+  }
+
+  function metroTick(){
+    if(!metro.running) return;
+    const ctx = getAudioCtx();
+    if(!ctx) return;
+
+    const lookahead = 0.20;
+    const interval = 60 / Math.max(40, Math.min(200, metro.bpm));
+
+    while(metro.nextTime < ctx.currentTime + lookahead){
+      clickSound(metro.nextTime);
+      metro.nextTime += interval;
+    }
+  }
+
+  async function startMetronome(){
+    const ctx = getAudioCtx();
+    if(!ctx){ showToast("Metronome not supported"); return; }
+    if(ctx.state !== "running"){
+      try{ await ctx.resume(); }catch(e){}
+    }
+    buildClickBuffer();
+
+    if(metro.running) return;
+    metro.running = true;
+    metro.nextTime = ctx.currentTime + 0.02;
+    clickSound(ctx.currentTime + 0.01);
+
+    if(!metro.scheduler){
+      metro.scheduler = setInterval(metroTick, 25);
+    }
+    updateMetroButtons();
+    showToast("Metronome on 🎶");
+  }
+
+  function stopMetronome(){
+    metro.running = false;
+    updateMetroButtons();
+    showToast("Metronome off");
+  }
+
+  function toggleMetronome(){
+    if(metro.running) stopMetronome();
+    else startMetronome();
+  }
+
+  function setBpm(val){
+    const bpm = Number(val);
+    metro.bpm = Math.max(40, Math.min(200, bpm));
+    state.metroBpm = metro.bpm;
+
+    const bv = $("bpmVal"); if(bv) bv.textContent = String(metro.bpm);
+    const fbv = $("fsBpmVal"); if(fbv) fbv.textContent = String(metro.bpm);
+    const br = $("bpmRange"); if(br) br.value = String(metro.bpm);
+    const fbr = $("fsBpmRange"); if(fbr) fbr.value = String(metro.bpm);
+
+    const ctx = getAudioCtx();
+    if(metro.running && ctx){
+      metro.nextTime = ctx.currentTime + 0.02;
+      clickSound(ctx.currentTime + 0.01);
+    }
+    save();
+  }
+
+  function updateMetroButtons(){
+    const label = metro.running ? "Stop" : "Start";
+    const a = $("metroToggle"); if(a) a.textContent = label;
+    const b = $("fsMetroToggle"); if(b) b.textContent = label;
+  }
+
+  function bindMetronomeControls(){
+    const br = $("bpmRange");
+    const fbr = $("fsBpmRange");
+    const bt = $("metroToggle");
+    const fbt = $("fsMetroToggle");
+
+    if(br && !br._bound){
+      br.addEventListener("input", (e)=> setBpm(e.target.value));
+      br.addEventListener("change", (e)=> setBpm(e.target.value));
+      br._bound = true;
+    }
+    if(fbr && !fbr._bound){
+      fbr.addEventListener("input", (e)=> setBpm(e.target.value));
+      fbr.addEventListener("change", (e)=> setBpm(e.target.value));
+      fbr._bound = true;
+    }
+    if(bt && !bt._bound){
+      bt.addEventListener("click", toggleMetronome);
+      bt._bound = true;
+    }
+    if(fbt && !fbt._bound){
+      fbt.addEventListener("click", toggleMetronome);
+      fbt._bound = true;
+    }
+  }
+
+  function celebrate(){
+    const layer = $("celebrate");
+    layer.style.display = "block";
+    const colors = [
+      "rgba(125,211,252,.95)",
+      "rgba(134,239,172,.95)",
+      "rgba(252,211,77,.95)",
+      "rgba(251,113,133,.85)",
+      "rgba(167,139,250,.90)"
+    ];
+    const pieces = 120;
+    for(let i=0;i<pieces;i++){
+      const p = document.createElement("div");
+      p.className = "confetti";
+      p.style.left = (Math.random()*100) + "vw";
+      p.style.top = (-20 - Math.random()*40) + "px";
+      p.style.background = colors[Math.floor(Math.random()*colors.length)];
+      p.style.animationDuration = (1.2 + Math.random()*1.2) + "s";
+      p.style.width = (8 + Math.random()*8) + "px";
+      p.style.height = (10 + Math.random()*14) + "px";
+      layer.appendChild(p);
+      setTimeout(()=> p.remove(), 2600);
+    }
+    clearTimeout(celebrate._t);
+    celebrate._t = setTimeout(()=>{
+      layer.querySelectorAll(".confetti").forEach(n=>n.remove());
+      layer.style.display = "none";
+    }, 2400);
+  }
+
 
   function showToast(msg){
     const t = $("toast");
@@ -303,10 +654,16 @@ document.addEventListener("DOMContentLoaded", () => {
       state.lastDate = today;
       state.doneMinutes = 0;
       state.items = (state.items || []).map(it => ({...it, done:false}));
+      state.reps = {};
       stopTimer(true);
       save();
     }
     state.items ||= [];
+    state.reps ||= {};
+    if(typeof state.metroBpm === 'number'){ metro.bpm = state.metroBpm; }
+    setBpm(metro.bpm);
+    bindMetronomeControls();
+    updateMetroButtons();
     state.timer ||= { itemId:null, remainingSec:0, totalSec:0, running:false, interval:null };
     render();
   }
@@ -322,6 +679,57 @@ document.addEventListener("DOMContentLoaded", () => {
     return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
   }
 
+  function renderCircles(){
+    const it = currentItem();
+    const small = $("circleRowSmall");
+    const big = $("circleRowBig");
+    if(!small || !big) return;
+    small.innerHTML = "";
+    big.innerHTML = "";
+    if(!it){
+      small.innerHTML = '<div class="smallnote">Pick an item to see practices 🙂</div>';
+      big.innerHTML = '<div class="smallnote">Pick an item to see practices 🙂</div>';
+      return;
+    }
+    ensureRepsState(it);
+    const a = repsArray(it);
+    const nextIndex = a.findIndex(x=>!x);
+
+    const makeCircle = (i) => {
+      const c = document.createElement("div");
+      c.className = "circle";
+      c.textContent = String(i+1);
+      if(a[i]) c.classList.add("done");
+      if(i === nextIndex) c.classList.add("next");
+      if(!a[i] && i !== nextIndex) c.classList.add("locked");
+
+      c.addEventListener("click", () => {
+        const cur = repsArray(it);
+        const ni = cur.findIndex(x=>!x);
+        if(ni === -1) return;
+        if(i !== ni){ showToast("Do them in order 🙂"); return; }
+        cur[i] = true;
+        state.reps[it.id] = cur;
+
+        if(cur.every(Boolean)){
+          celebrate();
+          if(!it.done){
+            it.done = true;
+            state.doneMinutes += Number(it.minutes||0);
+          }
+        }
+        save();
+        render();
+      });
+      return c;
+    };
+
+    a.forEach((_,i)=>{
+      small.appendChild(makeCircle(i));
+      big.appendChild(makeCircle(i));
+    });
+  }
+
   function updateTimerUI(){
     const it = currentItem();
     $("currentName").textContent = it ? it.name : "(none selected)";
@@ -333,6 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("fsTask").textContent = it ? it.name : "(none selected)";
     $("fsTime").textContent = formatTime(state.timer.remainingSec);
     $("fsBar").style.width = Math.min(100, Math.max(0, pct)) + "%";
+    renderCircles();
   }
 
   function pauseTimer(){
@@ -389,6 +798,7 @@ document.addEventListener("DOMContentLoaded", () => {
     state.timer.itemId = item.id;
     state.timer.totalSec = Number(item.minutes||0) * 60;
     state.timer.remainingSec = state.timer.totalSec;
+    ensureRepsState(item);
     updateTimerUI();
     save();
   }
@@ -404,10 +814,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function addItem(){
     const name = $("newName").value.trim();
     const minutes = Number($("newMinutes").value);
+    const reps = Number($("newReps").value || 1);
     if(!name){ showToast("Type a practice item."); return; }
     if(!minutes || minutes < 1){ showToast("Set minutes (1–90)."); return; }
-    state.items.push({ id: uid(), name, minutes, done:false });
-    $("newName").value = ""; $("newMinutes").value = "";
+    if(!reps || reps < 1 || reps > 30){ showToast("Set practices (1–30)."); return; }
+    const id = uid();
+    state.items.push({ id, name, minutes, reps, done:false });
+    state.reps[id] = Array.from({length:reps}, ()=> false);
+    $("newName").value = ""; $("newMinutes").value = ""; $("newReps").value = "";
     save(); render();
     showToast("Added ✅");
   }
@@ -436,6 +850,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const m = Number(newMins);
     if(!m || m < 1 || m > 90){ showToast("Minutes not changed."); return; }
 
+    const newReps = prompt("Edit practices (1–30):", String(it.reps || 1));
+    if(newReps === null) return;
+    const r = Number(newReps);
+    if(!r || r < 1 || r > 30){ showToast("Practices not changed."); return; }
+
     if(it.done){
       state.doneMinutes = Math.max(0, state.doneMinutes - Number(it.minutes||0));
       state.doneMinutes += m;
@@ -443,6 +862,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     it.name = nm;
     it.minutes = m;
+    it.reps = r;
+
+    const prev = state.reps[it.id] || [];
+    state.reps[it.id] = Array.from({length:r}, (_,i)=> Boolean(prev[i]));
 
     if(state.timer.itemId === it.id) setCurrent(it);
     save(); render();
@@ -457,6 +880,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if(it.done) state.doneMinutes = Math.max(0, state.doneMinutes - Number(it.minutes||0));
     state.items.splice(idx, 1);
+    delete state.reps[id];
 
     if(state.timer.itemId === id) stopTimer(true);
     save(); render();
@@ -475,6 +899,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if(!confirm("Reset today? (Keeps list, clears ticks & done minutes)")) return;
     state.doneMinutes = 0;
     state.items = state.items.map(it => ({...it, done:false}));
+    state.reps = {};
     stopTimer(true);
     save(); render();
     showToast("Reset ✅");
@@ -499,7 +924,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }catch(e){}
   }
 
-  function openFullScreen(){ $("fsOverlay").style.display = "block"; updateTimerUI(); }
+  function openFullScreen(){ $("fsOverlay").style.display = "block"; bindMetronomeControls(); updateTimerUI(); }
   function closeFullScreen(){ $("fsOverlay").style.display = "none"; }
 
   // Drag & drop reorder
@@ -571,7 +996,7 @@ document.addEventListener("DOMContentLoaded", () => {
       nm.textContent = it.name;
       const meta = document.createElement("div");
       meta.className = "meta";
-      meta.textContent = `${it.minutes} min`;
+      meta.textContent = `${it.minutes} min • ${it.reps || 1} practices • done ${repsDoneCount(it)}/${Math.max(1, Number(it.reps||1))}`;
       mid.appendChild(nm);
       mid.appendChild(meta);
 
@@ -633,16 +1058,42 @@ document.addEventListener("DOMContentLoaded", () => {
   $("addBtn").addEventListener("click", addItem);
   $("newName").addEventListener("keydown", (e)=>{ if(e.key==="Enter") addItem(); });
   $("newMinutes").addEventListener("keydown", (e)=>{ if(e.key==="Enter") addItem(); });
+  $("newReps").addEventListener("keydown", (e)=>{ if(e.key==="Enter") addItem(); });
 
   $("startBtn").addEventListener("click", startTimer);
   $("pauseBtn").addEventListener("click", () => { pauseTimer(); save(); updateTimerUI(); });
   $("nextBtn").addEventListener("click", nextItem);
+  $("resetItemBtn").addEventListener("click", resetCurrentItem);
   $("fullBtn").addEventListener("click", openFullScreen);
 
   $("fsExitBtn").addEventListener("click", closeFullScreen);
   $("fsStart").addEventListener("click", startTimer);
   $("fsPause").addEventListener("click", () => { pauseTimer(); save(); updateTimerUI(); });
   $("fsNext").addEventListener("click", nextItem);
+  $("fsReset").addEventListener("click", resetCurrentItem);
+
+  function resetCurrentItem(){
+    const it = currentItem();
+    if(!it){ showToast("Pick an item first 🙂"); return; }
+    if(!confirm("Restart timer and practices for this item?")) return;
+
+    pauseTimer();
+    state.timer.remainingSec = state.timer.totalSec;
+
+    state.reps[it.id] = Array.from({length: Number(it.reps||1)}, ()=> false);
+
+    if(it.done){
+      it.done = false;
+      state.doneMinutes = Math.max(0, state.doneMinutes - Number(it.minutes||0));
+    }
+
+    save();
+    updateTimerUI();
+    render();
+    showToast("Item reset ✅");
+  }
+
+
   $("fsTick").addEventListener("click", () => {
     const it = currentItem();
     if(!it){ showToast("Pick an item first 🙂"); return; }
@@ -652,6 +1103,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("resetTodayBtn").addEventListener("click", resetToday);
   $("wipeAllBtn").addEventListener("click", wipeAll);
+
+  document.addEventListener("visibilitychange", ()=>{ if(document.hidden) stopMetronome(); });
 
   load();
 });
