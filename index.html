@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lincoln’s Piano Practice</title>
+  <style>
+    :root{
+      --bg:#0b1220; --muted:#8fa3c7; --text:#eaf0ff; --line:rgba(255,255,255,.10);
+      --shadow: 0 10px 30px rgba(0,0,0,.35); --radius:16px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--font); color:var(--text);
+      background: radial-gradient(1200px 700px at 20% 10%, rgba(125, 211, 252,.22), transparent 55%),
+                  radial-gradient(900px 700px at 85% 25%, rgba(134,239,172,.18), transparent 55%),
+                  radial-gradient(900px 700px at 30% 90%, rgba(251,191,36,.12), transparent 60%),
+                  var(--bg);
+    }
+    header{max-width:980px; margin:22px auto 10px; padding:0 16px; display:flex; justify-content:space-between; gap:14px; flex-wrap:wrap; align-items:flex-end;}
+    h1{margin:0; font-size:22px}
+    .sub{margin:6px 0 0; color:var(--muted); font-size:13px}
+    main{max-width:980px; margin:14px auto 30px; padding:0 16px; display:grid; gap:14px}
+    .grid{display:grid; grid-template-columns:1.15fr .85fr; gap:14px}
+    @media (max-width: 860px){ .grid{grid-template-columns:1fr} }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:14px;
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    label{font-size:12px; color:var(--muted)}
+    input, button{font-family:var(--font)}
+    input{
+      width:100%; padding:10px 12px; border-radius:12px;
+      background:rgba(0,0,0,.18); border:1px solid var(--line);
+      color:var(--text); outline:none;
+    }
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{background:rgba(255,255,255,.09)}
+    .btn.primary{background:rgba(125,211,252,.18); border-color:rgba(125,211,252,.35)}
+    .btn.good{background:rgba(134,239,172,.15); border-color:rgba(134,239,172,.35)}
+    .btn.warn{background:rgba(251,191,36,.12); border-color:rgba(251,191,36,.35)}
+    .btn.bad{background:rgba(251,113,133,.12); border-color:rgba(251,113,133,.35)}
+    .mini{padding:8px 10px; font-size:12px}
+    .field{flex:1; min-width:160px}
+    .mins{max-width:140px}
+    .list{margin-top:12px; display:grid; gap:10px}
+    .item{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.16);
+      border-radius:14px;
+      padding:12px;
+      display:grid;
+      grid-template-columns: 28px 1fr auto;
+      gap:10px;
+      align-items:center;
+    }
+    .check{
+      width:18px; height:18px; border-radius:6px;
+      border:1px solid rgba(255,255,255,.24);
+      background:rgba(255,255,255,.04);
+      display:grid; place-items:center;
+      cursor:pointer;
+    }
+    .check[data-done="true"]{background:rgba(134,239,172,.20); border-color:rgba(134,239,172,.55)}
+    .check svg{opacity:0}
+    .check[data-done="true"] svg{opacity:1}
+    .name{font-weight:700}
+    .meta{color:var(--muted); font-size:12px; margin-top:4px}
+    .actions{display:flex; gap:8px; align-items:center}
+    .bigTime{font-size:64px; font-weight:900; text-align:center; letter-spacing:1px}
+    .progress{border:1px solid var(--line); border-radius:999px; height:12px; background:rgba(0,0,0,.16); overflow:hidden}
+    .bar{height:100%; width:0%; background:linear-gradient(90deg, rgba(125,211,252,.9), rgba(134,239,172,.9))}
+    .smallnote{font-size:12px; color:var(--muted); line-height:1.35}
+    .pill{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      padding:8px 10px; border-radius:999px; font-size:12px; color:var(--muted);
+      display:flex; gap:8px; align-items:center;
+    }
+    .pill b{color:var(--text)}
+    .pillrow{display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end}
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:rgba(17,27,46,.92);
+      border:1px solid rgba(255,255,255,.14);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      box-shadow:var(--shadow);
+      display:none;
+      font-size:13px;
+      z-index:1000;
+    }
+    .fsOverlay{
+      position:fixed; inset:0; z-index:999;
+      display:none;
+      background: radial-gradient(1200px 700px at 30% 10%, rgba(125, 211, 252,.20), transparent 55%),
+                  radial-gradient(900px 700px at 70% 20%, rgba(134,239,172,.16), transparent 55%),
+                  radial-gradient(900px 700px at 40% 90%, rgba(251,191,36,.10), transparent 60%),
+                  var(--bg);
+      padding:22px;
+    }
+    .fsWrap{height:100%; display:grid; grid-template-rows:auto 1fr auto auto; gap:18px; max-width:1100px; margin:0 auto;}
+    .fsTop{display:flex; justify-content:space-between; align-items:center; gap:12px;}
+    .fsTask{
+      font-size:34px; font-weight:900; text-align:center;
+      padding:10px 14px; border-radius:18px;
+      border:1px solid var(--line); background:rgba(0,0,0,.18);
+    }
+    .fsTime{font-size:min(18vw, 160px); font-weight:950; text-align:center; letter-spacing:2px; line-height:1;}
+    .fsButtons{display:flex; justify-content:center; flex-wrap:wrap; gap:14px;}
+    .fsBtn{
+      font-size:22px; padding:16px 22px; border-radius:18px; min-width:160px;
+      border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06); color:var(--text);
+      cursor:pointer;
+    }
+    .fsBtn.good{background:rgba(134,239,172,.18); border-color:rgba(134,239,172,.45)}
+    .fsBtn.primary{background:rgba(125,211,252,.20); border-color:rgba(125,211,252,.40)}
+    .fsBtn.warn{background:rgba(251,191,36,.14); border-color:rgba(251,191,36,.45)}
+    .fsBtn.bad{background:rgba(251,113,133,.14); border-color:rgba(251,113,133,.45)}
+    .debug{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px; color:rgba(234,240,255,.85); white-space:pre-wrap;}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>🎹 Lincoln’s Piano Practice</h1>
+      <div class="sub">Add tasks, set minutes, start the timer, then tick them off ✅</div>
+    </div>
+    <div class="pillrow">
+      <div class="pill">Status: <b id="jsStatus">Loading…</b></div>
+      <div class="pill">Planned: <b id="plannedMin">0</b> min</div>
+      <div class="pill">Done: <b id="doneMin">0</b> min</div>
+      <div class="pill">Completed: <b id="completedCount">0</b>/<span id="totalCount">0</span></div>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <div class="row" style="justify-content:space-between; align-items:flex-end;">
+        <div>
+          <div style="font-weight:800;">Practice List</div>
+          <div class="smallnote">If buttons do nothing, you’re viewing in a “preview” that blocks JavaScript. Open in Safari/Chrome.</div>
+        </div>
+        <div class="row">
+          <button class="btn mini" id="testBtn">Test Button</button>
+          <button class="btn warn" id="resetTodayBtn">Reset Today</button>
+          <button class="btn bad" id="wipeAllBtn">Wipe All</button>
+        </div>
+      </div>
+
+      <div style="height:10px"></div>
+
+      <div class="row">
+        <div class="field">
+          <label>Practice item</label>
+          <input id="newName" placeholder="e.g., Scales / Piece / Technique" maxlength="50">
+        </div>
+        <div class="field mins">
+          <label>Minutes</label>
+          <input id="newMinutes" type="number" min="1" max="90" step="1" placeholder="10">
+        </div>
+        <button class="btn primary" id="addBtn">Add</button>
+      </div>
+
+      <div class="list" id="list"></div>
+
+      <div style="height:10px"></div>
+      <div class="card" style="background:rgba(0,0,0,.12); box-shadow:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:800;">Debug</div>
+          <button class="btn mini" id="copyDebug">Copy</button>
+        </div>
+        <div class="debug" id="debugOut"></div>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div>
+          <div style="font-weight:800;">Timer</div>
+          <div class="smallnote">Pick an item, press Start. Full Screen is big for the piano.</div>
+        </div>
+        <button class="btn primary" id="fullBtn">Full Screen</button>
+      </div>
+
+      <div class="card" style="background:rgba(0,0,0,.12); box-shadow:none; margin-top:10px;">
+        <div class="smallnote">Current item</div>
+        <div id="currentName" style="font-weight:900; font-size:16px; margin-top:6px;">(none selected)</div>
+        <div class="bigTime" id="timeLeft">00:00</div>
+        <div class="progress"><div class="bar" id="bar"></div></div>
+        <div class="row" style="justify-content:center; margin-top:10px;">
+          <button class="btn good" id="startBtn">Start</button>
+          <button class="btn" id="pauseBtn">Pause</button>
+          <button class="btn" id="nextBtn">Next</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="fsOverlay" id="fsOverlay">
+    <div class="fsWrap">
+      <div class="fsTop">
+        <div style="font-weight:900;">🎹 Piano Timer Mode</div>
+        <button class="btn" id="fsExitBtn">Exit</button>
+      </div>
+
+      <div class="fsTask" id="fsTask">(none selected)</div>
+
+      <div>
+        <div class="fsTime" id="fsTime">00:00</div>
+        <div class="progress" style="height:18px;"><div class="bar" id="fsBar"></div></div>
+      </div>
+
+      <div class="fsButtons">
+        <button class="fsBtn good" id="fsStart">Start</button>
+        <button class="fsBtn primary" id="fsPause">Pause</button>
+        <button class="fsBtn warn" id="fsNext">Next</button>
+        <button class="fsBtn bad" id="fsTick">Tick Done ✅</button>
+      </div>
+
+      <div class="smallnote" style="text-align:center;">
+        iPhone tip: Open in Safari → Share → <b>Add to Home Screen</b>.
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const $ = (id) => document.getElementById(id);
+  const KEY = "lincoln_piano_practice_v3";
+  const TODAY_KEY = () => new Date().toISOString().slice(0,10);
+
+  const dbg = [];
+  const log = (m) => { dbg.unshift(`[${new Date().toLocaleTimeString()}] ${m}`); $("debugOut").textContent = dbg.slice(0,30).join("\n"); };
+
+  let state = {
+    items: [],
+    doneMinutes: 0,
+    lastDate: TODAY_KEY(),
+    timer: { itemId:null, remainingSec:0, totalSec:0, running:false, interval:null }
+  };
+
+  function save(){
+    try{
+      localStorage.setItem(KEY, JSON.stringify({...state, timer:{...state.timer, interval:null}}));
+      log("Saved.");
+    }catch(e){
+      log("localStorage blocked (still OK): " + (e && e.message ? e.message : e));
+    }
+  }
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(raw) state = JSON.parse(raw);
+      log("Loaded.");
+    }catch(e){
+      log("Load failed (still OK): " + (e && e.message ? e.message : e));
+    }
+
+    const today = TODAY_KEY();
+    if(state.lastDate !== today){
+      state.lastDate = today;
+      state.doneMinutes = 0;
+      state.items = (state.items || []).map(it => ({...it, done:false}));
+      stopTimer(true);
+      save();
+      log("Daily reset.");
+    }
+
+    state.items ||= [];
+    state.timer ||= { itemId:null, remainingSec:0, totalSec:0, running:false, interval:null };
+    render();
+  }
+
+  function plannedMinutes(){ return state.items.reduce((a,it)=>a + (Number(it.minutes)||0), 0); }
+  function completedCount(){ return state.items.filter(it=>it.done).length; }
+  function currentItem(){ return state.items.find(i=>i.id === state.timer.itemId) || null; }
+
+  function showToast(msg){
+    const t = $("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=> t.style.display="none", 1400);
+  }
+
+  function formatTime(sec){
+    sec = Math.max(0, Math.floor(sec));
+    const m = Math.floor(sec/60);
+    const s = sec%60;
+    return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+  }
+
+  function updateTimerUI(){
+    const it = currentItem();
+    $("currentName").textContent = it ? it.name : "(none selected)";
+    $("timeLeft").textContent = formatTime(state.timer.remainingSec);
+    const total = Math.max(1, state.timer.totalSec);
+    const pct = 100 * (1 - (state.timer.remainingSec / total));
+    $("bar").style.width = Math.min(100, Math.max(0, pct)) + "%";
+
+    $("fsTask").textContent = it ? it.name : "(none selected)";
+    $("fsTime").textContent = formatTime(state.timer.remainingSec);
+    $("fsBar").style.width = Math.min(100, Math.max(0, pct)) + "%";
+  }
+
+  function pauseTimer(){
+    state.timer.running = false;
+    if(state.timer.interval){
+      clearInterval(state.timer.interval);
+      state.timer.interval = null;
+    }
+  }
+
+  function stopTimer(clear=false){
+    pauseTimer();
+    if(clear){
+      state.timer.itemId = null;
+      state.timer.remainingSec = 0;
+      state.timer.totalSec = 0;
+    }
+    updateTimerUI();
+  }
+
+  function beep(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = 880;
+      g.gain.value = 0.05;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      setTimeout(()=>{ o.stop(); ctx.close(); }, 180);
+    }catch(e){}
+  }
+
+  function tick(){
+    if(!state.timer.running) return;
+    state.timer.remainingSec -= 1;
+    if(state.timer.remainingSec <= 0){
+      state.timer.remainingSec = 0;
+      pauseTimer();
+      updateTimerUI();
+      showToast("Time’s up! Tick if finished ✅");
+      beep();
+      save();
+      log("Timer finished.");
+      return;
+    }
+    updateTimerUI();
+  }
+
+  function startTimer(){
+    if(!state.timer.itemId){ showToast("Pick an item first 🙂"); return; }
+    if(state.timer.remainingSec <= 0){ showToast("At 0:00. Press Next or pick again."); return; }
+    if(state.timer.running) return;
+    state.timer.running = true;
+    state.timer.interval = setInterval(tick, 1000);
+    save();
+    log("Timer started.");
+  }
+
+  function setCurrent(item){
+    if(!item){
+      stopTimer(true);
+      save();
+      render();
+      return;
+    }
+    stopTimer(false);
+    state.timer.itemId = item.id;
+    state.timer.totalSec = Number(item.minutes||0) * 60;
+    state.timer.remainingSec = state.timer.totalSec;
+    updateTimerUI();
+    save();
+    log(`Selected: ${item.name} (${item.minutes} min)`);
+  }
+
+  function nextItem(){
+    pauseTimer();
+    const idx = state.items.findIndex(i=>i.id === state.timer.itemId);
+    const next = state.items.slice(idx+1).find(i=>!i.done) || state.items.find(i=>!i.done) || null;
+    setCurrent(next);
+    render();
+    log("Next item.");
+  }
+
+  function toggleDone(id){
+    const it = state.items.find(x=>x.id===id);
+    if(!it) return;
+    const wasDone = it.done;
+    it.done = !it.done;
+    if(!wasDone && it.done){ state.doneMinutes += Number(it.minutes||0); showToast("Nice! ✅"); }
+    else if(wasDone && !it.done){ state.doneMinutes = Math.max(0, state.doneMinutes - Number(it.minutes||0)); showToast("Unticked."); }
+    save();
+    render();
+  }
+
+  function addItem(){
+    const name = $("newName").value.trim();
+    const minutes = Number($("newMinutes").value);
+    if(!name){ showToast("Type a practice item."); return; }
+    if(!minutes || minutes < 1){ showToast("Set minutes (1–90)."); return; }
+    state.items.push({ id: Math.random().toString(16).slice(2)+Date.now().toString(16), name, minutes, done:false });
+    $("newName").value = ""; $("newMinutes").value = "";
+    save();
+    render();
+    log(`Added: ${name} (${minutes} min)`);
+  }
+
+  function resetToday(){
+    if(!confirm("Reset today? (Keeps list, clears ticks & done minutes)")) return;
+    state.doneMinutes = 0;
+    state.items = state.items.map(it => ({...it, done:false}));
+    stopTimer(true);
+    save(); render();
+    log("Reset today.");
+  }
+
+  function wipeAll(){
+    if(!confirm("Wipe everything? This cannot be undone.")) return;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    state = { items:[], doneMinutes:0, lastDate:TODAY_KEY(), timer:{ itemId:null, remainingSec:0, totalSec:0, running:false, interval:null } };
+    render();
+    log("Wiped all.");
+  }
+
+  function render(){
+    $("plannedMin").textContent = plannedMinutes();
+    $("doneMin").textContent = state.doneMinutes;
+    $("completedCount").textContent = completedCount();
+    $("totalCount").textContent = state.items.length;
+
+    const list = $("list");
+    list.innerHTML = "";
+    if(state.items.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "smallnote";
+      empty.textContent = "No items yet. Add a practice item above 🙂";
+      list.appendChild(empty);
+      setCurrent(null);
+      return;
+    }
+
+    state.items.forEach(it => {
+      const el = document.createElement("div");
+      el.className = "item";
+
+      const check = document.createElement("div");
+      check.className = "check";
+      check.dataset.done = it.done ? "true" : "false";
+      check.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <path d="M20 6L9 17l-5-5" stroke="rgba(234,240,255,.95)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+      check.onclick = () => toggleDone(it.id);
+
+      const mid = document.createElement("div");
+      const nm = document.createElement("div");
+      nm.className = "name";
+      nm.textContent = it.name;
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = `${it.minutes} min`;
+      mid.appendChild(nm);
+      mid.appendChild(meta);
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const pick = document.createElement("button");
+      pick.className = "btn mini primary";
+      pick.textContent = "Pick";
+      pick.onclick = () => setCurrent(it);
+      actions.appendChild(pick);
+
+      el.appendChild(check);
+      el.appendChild(mid);
+      el.appendChild(actions);
+      list.appendChild(el);
+    });
+
+    updateTimerUI();
+  }
+
+  function openFullScreen(){ $("fsOverlay").style.display = "block"; updateTimerUI(); log("Opened full screen overlay."); }
+  function closeFullScreen(){ $("fsOverlay").style.display = "none"; log("Closed overlay."); }
+
+  // Bind buttons
+  $("addBtn").addEventListener("click", addItem);
+  $("startBtn").addEventListener("click", startTimer);
+  $("pauseBtn").addEventListener("click", () => { pauseTimer(); save(); updateTimerUI(); log("Paused."); });
+  $("nextBtn").addEventListener("click", nextItem);
+  $("fullBtn").addEventListener("click", openFullScreen);
+
+  $("fsExitBtn").addEventListener("click", closeFullScreen);
+  $("fsStart").addEventListener("click", startTimer);
+  $("fsPause").addEventListener("click", () => { pauseTimer(); save(); updateTimerUI(); log("Paused (FS)."); });
+  $("fsNext").addEventListener("click", nextItem);
+  $("fsTick").addEventListener("click", () => {
+    const it = currentItem();
+    if(!it){ showToast("Pick an item first 🙂"); return; }
+    if(!it.done) toggleDone(it.id);
+    else showToast("Already ticked ✅");
+  });
+
+  $("resetTodayBtn").addEventListener("click", resetToday);
+  $("wipeAllBtn").addEventListener("click", wipeAll);
+
+  $("testBtn").addEventListener("click", () => { showToast("Buttons are working ✅"); log("Test button clicked."); });
+
+  $("copyDebug").addEventListener("click", async () => {
+    const txt = $("debugOut").textContent || "";
+    try{
+      await navigator.clipboard.writeText(txt);
+      showToast("Copied debug ✅");
+    }catch(e){
+      showToast("Copy not allowed here");
+    }
+  });
+
+  $("newName").addEventListener("keydown", (e)=>{ if(e.key==="Enter") addItem(); });
+  $("newMinutes").addEventListener("keydown", (e)=>{ if(e.key==="Enter") addItem(); });
+
+  $("jsStatus").textContent = "JS running ✅";
+  log("App initialized. If clicks still do nothing, open in Safari/Chrome (not preview).");
+  load();
+});
+</script>
+</body>
+</html>
